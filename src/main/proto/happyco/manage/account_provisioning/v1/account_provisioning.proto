@@ -1,0 +1,51 @@
+syntax = "proto3";
+package happyco.manage.account_provisioning.v1;
+option go_package = "happyco/manage/account_provisioning/v1";
+
+import  "happyco/manage/account/v1/account.proto" ;
+import  "happyco/type/v1/integration_id.proto" ;
+import "google/api/annotations.proto";
+
+service AccountProvisioningService {
+  rpc CreateAccounts(CreateAccountsRequest) returns (CreateAccountsResponse) {
+    option(google.api.http) = {
+      post: "/api/v1/manage/accounts/create"
+      body: "*"
+    };
+  };
+  rpc UpdateAccountStatuses(UpdateAccountStatusesRequest) returns (UpdateAccountStatusesResponse) {
+    option(google.api.http) = {
+      put: "/api/v1/manage/account/statuses/update"
+      body: "*"
+    };
+  };
+}
+
+
+message CreateAccountsRequest {
+	message AccountWithAdmin {
+	  account.v1.Account account = 2;
+	  account.v1.User admin = 3;
+	}
+
+  repeated AccountWithAdmin account_with_admins = 1;
+}
+
+
+message CreateAccountsResponse {
+	message AccountIDWithAdminID {
+	  type.v1.IntegrationID	account_id = 1;
+	  type.v1.IntegrationID	admin_id = 2;
+	}
+  repeated AccountIDWithAdminID account_id_with_admin_ids = 1;    
+}
+
+
+message UpdateAccountStatusesRequest {
+  repeated type.v1.IntegrationID account_ids = 1;
+	bool active = 2;
+}
+
+message UpdateAccountStatusesResponse {
+}
+ 

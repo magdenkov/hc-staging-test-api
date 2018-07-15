@@ -1,0 +1,23 @@
+syntax = "proto3";
+package happyco.type.v1;
+
+option go_package = "happyco/type/v1";
+
+
+/** IntegrationID represents an object on HappyCo's platform. Use of the
+ * external_id is encouraged as no guarantees are made about id over the life
+ * of the platform.
+ */
+message IntegrationID {
+	string id	 = 1;
+	string external_id = 2;
+	int32 sync_token = 3;
+//	IntegrationData data = 4;
+}
+
+//message IntegrationData {
+//	map<string, string> data = 3;
+//	map<string, string> upsert_data = 4;
+//}
+
+

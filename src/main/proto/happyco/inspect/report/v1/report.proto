@@ -1,0 +1,271 @@
+syntax = "proto3";
+package happyco.inspect.report.v1;
+
+option go_package = "happyco/inspect/report/v1";
+
+import "happyco/type/v1/integration_id.proto" ;
+import "happyco/type/v1/date.proto" ;
+import "happyco/type/v1/paging.proto";
+import "happyco/type/v1/event.proto";
+import "google/api/annotations.proto";
+
+/** Report service is used for acceing reports generated from
+ * one or two inspections that are linked to the same asset. 
+ */
+service ReportService {
+	/** List reports gets a paginated and optionally filtered list of
+	 * reports from one or more folders.
+	 */
+	rpc ListReports(ListReportsRequest) returns (ListReportsResponse) {
+    option(google.api.http) = {
+      post: "/api/v1/inspect/reports/list"
+      body: "*"
+    };
+  };
+}
+
+
+/** Reports are the end artifact of one or sometimes two inspections. They are
+ * generated from inspection(s) at a point in time but do not update if the
+ * underlying inspection updates. They are self contained once generated. They
+ * are intended to be similar to a printed pieice of paper in that they can't
+ * be edited but they can be signed at any time.
+ */
+message Report {
+
+	/** ID of report. */
+	type.v1.IntegrationID id = 1;
+
+	/** Public URL can be used to share the inspection. It contains a UUID
+	 * to provide security.
+	 */
+	string public_url = 2;
+
+	/** Name of the asset that was inspected. This is typically the address
+	 * of the unit or house that was inspected.
+	 */
+	string name  = 3;
+
+	/** Title of the report. This can be overriden by the user in the
+	 * report settings but typically comes from the template name used to
+	 * perform the inspection.
+	 */
+	string title = 4;
+
+	/** The revision of the report. This will increment when a change
+	 * occurs. Reports are limited to changes being archive/unarchive
+	 * operations or new signatures being added.
+	 */
+	int32 revision = 5;
+
+	/** Account ID that the report belongs to. For custom integrations
+	 * (i.e. not integration partners) it may be omitted. 
+	 */
+	type.v1.IntegrationID account_id = 6;
+
+
+	/** TODO: TBD if we should keep this -- inspection does not have it */
+	type.v1.IntegrationID folder_id = 7;
+
+	/** Asset ID references the parent that inspection is attached to. This field must
+	 * reference a non archived asset in the same folder as the template
+	 * referenced below.
+	 */
+	type.v1.IntegrationID asset_id = 8;
+
+	/** Inspection IDs references one or more inspection(s) used to
+	 * generate the report.
+	 */
+	repeated type.v1.IntegrationID inspection_ids = 9;
+
+	/** Generated at is the time (as reported by the mobile device) that the
+	 * report was generated at. */
+	type.v1.Date generated_at = 10;
+
+	/** Finalized is the time (as reported by the mobile device) that the
+	 * report was locked. Until the report is locked the display settings
+	 * can be changed. Signing a report locks it immediately.
+	 */
+	type.v1.Date  finalized_at = 11;
+
+	/** TODO: Inspector ID references the user who created the report. TBD
+	 * whether to include this (where is it coming from) */
+	type.v1.IntegrationID inspector_id = 12;
+
+	/** Inspector name taken from on the most recently complete inspection.
+	 */
+	string inspector_name = 13;
+
+	/** All of the report data (this structure is still subject to change
+	 * so at the moment this is just a json blob) */
+	string data = 14;     //json
+
+	/** A map of signatories added to the report. Each key in the map only
+	 * needs to be unique to this report. */
+	map<string, Signatory>  signatories = 15;
+}
+
+/** Signatory represents a signature box on a report */
+message Signatory {
+
+	/** Name of the signatory. e.g. Mafalda Hopkirk.
+	 */
+	string name = 1;
+
+	/** TODO: should this be included? Its not included in the report. */
+	string role = 2;
+
+	/** Generated is the time when the signatory box was generated and
+	 * attached to the report.
+	 */
+	type.v1.Date generated_at = 3;
+
+	/** Signed at is the time (as reported by the mobile device) that the
+	 * user physically signed the report. */
+	type.v1.Date signed_at = 4;
+
+	/** User signed at is a user adjustable signed at time (similar to the
+	 * date field often found on paper reports).
+	 */
+	type.v1.Date user_signed_at = 5;
+}
+
+
+/** List report request is used for fetching reports. It can be
+ * filtered to specific reports, assets or folders. If the intent is to be
+ * notified when an report undergoes a status transition please use the
+ * ReportEventService.
+ */
+message ListReportsRequest {
+
+	/** Account ID that the request applies to. For custom integrations
+	 * (i.e. not integration partners) it can be omitted. 
+	 */
+	type.v1.IntegrationID account_id = 1;
+
+	/** Folder IDs is an optional filter that lists reports only for
+	 * specific folders. 
+	 */
+	repeated type.v1.IntegrationID folder_ids = 2;
+
+	/** Asset IDs is an optional filter that lists reports only for
+	 * specific assets.
+	 */
+	repeated type.v1.IntegrationID asset_ids = 3;
+
+	/** Inspections IDs is an optional filter that lists reports only for
+	 * specific inspections.
+	 */
+	repeated type.v1.IntegrationID inspection_ids = 4;
+
+	/** Report IDs is an optional filter that lists reports only for
+	 * specific reports.
+	 */
+	repeated type.v1.IntegrationID report_ids = 5;
+
+	/** Archived when set to true returns archived reports only. 
+	 */
+	bool archived = 6;
+
+	/** Paging message that contains information about the page being
+	 * requested. This message is usually copied from a previous list
+	 * request's response.
+	 */
+	type.v1.Paging paging = 7;
+}
+
+/** List reports response is a page of fetched report results. It
+ * includes a previous and next page token that can be passed into subsequent
+ * list report requests.
+ */
+message ListReportsResponse {
+
+	/** Reports contains the results for this page. */
+	repeated Report reports = 1;
+
+	/** Previous page is an token that will be present for all pages after
+	 * the first.
+	 */
+	type.v1.Paging previous_page = 2;
+
+
+	/** Next page is an token that will be present for all pages except the
+	 * last.
+	 */
+	type.v1.Paging next_page = 3;
+}
+
+
+/** ReportEventService is the simplest way to be notified of reports being
+ * created Any number of clients can connect to the service and be pushed the
+ * events. HappyCo guarantees to only send one client the event at a time (in a
+ * round robin fashion). This means that you can scale event processing as
+ * easily as your web servers.
+ * 
+ * For this to work events must be acknowledged or time extensions requested
+ * before the timeout peroid. If neither of these occurs, the event will be
+ * sent to a new client. This covers 99% of cases, but if it's essential that
+ * in the event of a frozen client (that unfreezes) that the event is not sent
+ * to another client. You can de-duplicate requests using the event ID.
+ *
+ * When selecting a timeout and possible requesting time extensions please be
+ * wary of network travel time. We recommend setting large timeouts (10mins+)
+ * unless there is a critical reason to be resent events faster. 
+ */
+service ReportEventService {
+
+	/** On reports created returns a stream that will be pushed events as
+	 * they occur
+	 */
+	rpc OnReportsCreated(ReportsCreatedEventRequest) returns (stream ReportsCreatedEvent);
+
+	/** On reports created ack should be called when events have
+	 * been processed. Unless this is called events will be sent again
+	 * after the timeout period. 
+	 */
+	rpc OnReportsCreatedAck(ReportsCreatedEventAck) returns (ReportsCreatedEventAckResponse);
+}
+
+message ReportsCreatedEventRequest {
+
+	/** Account ID that the request applies to. For custom integrations
+	 * (i.e. not integration partners) it can be omitted. 
+	 */
+	type.v1.IntegrationID account_id = 1;
+
+	/** Options the client can set to configure the returned event stream.
+	 * See EventHandlerOptions for more details.
+	 */
+	type.v1.EventHandlerOptions options = 2;
+}
+
+/** Reports created events are emitted from streams requested with
+ * OnReportCreated.
+ */
+message ReportsCreatedEvent {
+	type.v1.Event event = 1;
+	repeated ReportCreated reports = 2;
+
+	message ReportCreated {
+		/** Report ID can be used to fetch the report with a filtered
+		 * list reports request 
+		 */
+		type.v1.IntegrationID report_id = 1;
+
+		/** TODO: should we remove this? I feel like is only useful if we have an updated event stream too */
+		int32 version = 2;
+	}
+}
+
+/** Reports created event ack is used to acknowledge or request time extensions
+ * for one or more events.
+ */
+message ReportsCreatedEventAck {
+	type.v1.EventAck ack = 1;
+}
+
+/** ReportsCreatedEventAckResponse contains no data but indicates successful
+ * acknowledgement.
+ */
+message ReportsCreatedEventAckResponse {
+}

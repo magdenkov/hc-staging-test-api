@@ -1,0 +1,102 @@
+syntax = "proto3";
+package happyco.inspect.template.v1;
+
+option go_package = "happyco/inspect/template/v1";
+
+
+import "happyco/type/v1/integration_id.proto" ;
+import "happyco/type/v1/paging.proto";
+import "happyco/type/v1/varia.proto";
+import "happyco/inspect/type/v1/inspect_type.proto";
+import "google/api/annotations.proto";
+
+service TemplateService {
+  rpc ListTemplates(ListTemplatesRequest) returns (ListTemplatesResponse) {
+    option(google.api.http) = {
+      post: "/api/v1/inspect/templates/list"
+      body: "*"
+    };
+  }; 
+  rpc CreateTemplates(CreateTemplatesRequest) returns (CreateTemplatesResponse) {
+    option(google.api.http) = {
+      post: "/api/v1/inspect/templates/create"
+      body: "*"
+    };
+  };  
+  rpc UpdateTemplates(UpdateTemplatesRequest) returns (UpdateTemplatesResponse){
+    option(google.api.http) = {
+      put: "/api/v1/inspect/templates/update"
+      body: "*"
+    };
+  };  
+  rpc ArchiveTemplates(SetTemplatesArchivedRequest) returns (SetTemplatesArchivedResponse){
+    option(google.api.http) = {
+      put: "/api/v1/inspect/templates/archive"
+      body: "*"
+    };
+  }; 
+  rpc UnarchiveTemplates(SetTemplatesArchivedRequest) returns (SetTemplatesArchivedResponse){
+    option(google.api.http) = {
+      put: "/api/v1/inspect/templates/unarchive"
+      body: "*"
+    };
+  };
+}
+
+
+message Template {
+  .happyco.type.v1.IntegrationID id = 1;
+  .happyco.type.v1.IntegrationID account_id = 2;
+  .happyco.type.v1.IntegrationID folder_id = 3;
+  string name = 4;
+  int32 edition = 5;
+  string description = 6;
+  map<string, .happyco.inspect.type.v1.Section> sections = 7;
+  map<string, .happyco.type.v1.StringArray> outlines = 8; 
+  map<string, .happyco.inspect.type.v1.RatingGroups> rating_groups = 9;
+  repeated .happyco.inspect.type.v1.HeaderField header_fields = 10;
+  repeated .happyco.inspect.type.v1.FooterField footer_fields = 11;
+} 
+
+message ListTemplatesRequest {
+  .happyco.type.v1.IntegrationID account_id = 1;
+  repeated .happyco.type.v1.IntegrationID folder_ids = 2;
+  repeated .happyco.type.v1.IntegrationID template_ids = 3;
+  bool archived = 4;
+  .happyco.type.v1.Paging paging = 5;
+}
+
+
+message ListTemplatesResponse {
+  repeated Template templates = 1;
+  .happyco.type.v1.Paging previous_page = 2;
+  .happyco.type.v1.Paging next_page = 3;
+}
+
+message CreateTemplatesRequest {
+  .happyco.type.v1.IntegrationID account_id = 1;
+  .happyco.type.v1.IntegrationID folder_id = 2;
+  repeated Template templates = 3;
+}
+
+message CreateTemplatesResponse {
+  repeated .happyco.type.v1.IntegrationID template_ids = 1;
+}
+
+message UpdateTemplatesRequest {
+  .happyco.type.v1.IntegrationID account_id = 1;
+  .happyco.type.v1.IntegrationID folder_id = 2;
+  repeated Template templates = 3;
+}
+
+message UpdateTemplatesResponse {
+}
+
+message SetTemplatesArchivedRequest {
+	.happyco.type.v1.IntegrationID account_id = 1;
+  .happyco.type.v1.IntegrationID folder_id = 2;
+	repeated .happyco.type.v1.IntegrationID template_ids = 3;
+}
+
+message SetTemplatesArchivedResponse {
+}

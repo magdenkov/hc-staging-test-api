@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package happyco.type.v1;
+option go_package = "happyco/type/v1";
+
+message Date {
+  int32 year = 1;
+  int32 month = 2;
+  int32 day = 3;
+}
+
+message DateTime {
+  int32 year = 1;
+  int32 month = 2;
+  int32 day = 3;
+  int32 hour24 = 4;
+  int32 minute = 5;
+  int32 second = 6;
+}
+

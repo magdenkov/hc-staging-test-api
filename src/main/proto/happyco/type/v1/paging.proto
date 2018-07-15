@@ -1,0 +1,10 @@
+syntax = "proto3";
+package happyco.type.v1;
+
+option go_package = "happyco/type/v1";
+
+message Paging {
+}
+
+message PagingResponse {
+}

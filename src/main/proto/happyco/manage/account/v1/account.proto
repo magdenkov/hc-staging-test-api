@@ -1,0 +1,137 @@
+syntax = "proto3";
+package happyco.manage.account.v1;
+option go_package = "happyco/manage/account/v1";
+
+import  "happyco/type/v1/integration_id.proto" ;
+import  "happyco/type/v1/paging.proto" ;
+import "google/api/annotations.proto";
+
+service AccountService {
+  rpc ListAccounts(ListAccountsRequest) returns (ListAccountsResponse) {
+    option(google.api.http) = {
+      post: "/api/v1/manage/accounts/list"
+      body: "*"
+    };
+  };
+  rpc UpdateAccounts(UpdateAccountsRequest) returns (UpdateAccountsResponse) {
+    option(google.api.http) = {
+      post: "/api/v1/manage/accounts/update"
+      body: "*"
+    };
+  };
+}
+
+message Account {
+  type.v1.IntegrationID id = 1;
+  bool inactive = 2;
+
+  string name = 3;
+  string phone = 4;
+  string address_line_1 = 5; 
+  string address_line_2 = 6;
+  string city = 7;
+  string state = 8;
+  string postal_code = 9;
+  string country = 10;
+}
+
+
+message ListAccountsRequest {
+	repeated type.v1.IntegrationID account_ids = 1;
+  bool include_inactive = 2;
+	type.v1.Paging paging = 3;
+}
+
+message ListAccountsResponse {
+  repeated Account accounts = 1;
+	type.v1.PagingResponse paging = 2;
+}
+
+message UpdateAccountsRequest {
+  message AccountWithAdminId {
+	  Account account = 1;
+	  type.v1.IntegrationID admin_user_id = 2;
+  }
+  repeated AccountWithAdminId account_with_admin_ids = 1;
+}
+
+message UpdateAccountsResponse  {
+}
+
+service AccountUsersService {
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
+    option(google.api.http) = {
+      post: "/api/v1/manage/account/users/list"
+      body: "*"
+    };
+  };
+  rpc AddUsers(AddUsersRequest) returns (AddUsersResponse) {
+    option(google.api.http) = {
+      post: "/api/v1/manage/account/users/add"
+      body: "*"
+    };
+  };
+  rpc UpdateUsers(UpdateUsersRequest) returns (UpdateUsersResponse){
+    option(google.api.http) = {
+      put: "/api/v1/manage/account/users/update"
+      body: "*"
+    };
+  };
+	rpc UpdateUserStatuses(UpdateUserStatusesRequest) returns (UpdateUserStatusesResponse){
+    option(google.api.http) = {
+      put: "/api/v1/manage/account/user/statuses/update"
+      body: "*"
+    };
+  };
+}
+
+message User {
+  type.v1.IntegrationID id = 1;
+  bool inactive = 2;
+
+  string first_name = 3;
+  string last_name = 4;
+  string email = 5;
+  string phone = 6;
+}
+
+message ListUsersRequest {
+	type.v1.IntegrationID account_id = 1;
+	repeated type.v1.IntegrationID user_ids = 2;
+  bool include_inactive = 3;
+	type.v1.Paging paging = 4;
+}
+
+message ListUsersResponse {
+  repeated User users = 1;
+	type.v1.PagingResponse paging = 2;
+}
+
+message AddUsersRequest {
+  type.v1.IntegrationID account_id = 1;
+  repeated User users = 2;
+}
+
+message AddUsersResponse {
+  repeated type.v1.IntegrationID user_ids = 1;
+}
+
+message UpdateUsersRequest {
+  type.v1.IntegrationID account_id = 1;
+  repeated User users = 2;
+}
+
+message UpdateUsersResponse {
+  repeated type.v1.IntegrationID user_ids = 1;
+}
+
+message UpdateUserStatusesRequest {
+  type.v1.IntegrationID account_id = 1;
+  repeated type.v1.IntegrationID user_ids = 2;
+  bool active = 3;
+}
+
+message UpdateUserStatusesResponse {
+}
+
+

@@ -1,0 +1,406 @@
+syntax = "proto3";
+package happyco.inspect.type.v1;
+
+
+option go_package = "happyco/inspect/type/v1";
+
+import "happyco/type/v1/varia.proto";
+import "happyco/type/v1/integration_id.proto";
+
+
+/** Header fields exist at the top of inspections and reports generated from
+ * them. They can be preset in scheduled inspections.  
+ */
+message HeaderField {
+
+	/** Label is required and is shown on both the inspection and reports.
+	 * Example values include: File #, Key Number, etc.
+	 */
+	string label = 1;
+
+
+	/** Type is required an must be set to 'text'.
+	 */
+	string type = 2;
+
+	/* Value is optional and is shown on both the inspection and reports.
+	 * It can be changed during the inspection.
+	 */
+	string value = 3;
+}
+
+/** Sections provide structure to the inspection. Typically they'll have names
+ * like 'Kitchen', 'Floor 1', etc.
+ */
+message Section {
+
+	/** Section name is an optional field but should be set to something
+	 * that gives context to its items. The section name will be shown as a
+	 * header to the item names in inspections and reports.
+	 */
+	string name = 1;
+
+
+	/** Items contain most of the inspection information such as; selected
+	 * rating values, notes and photos.
+	 */
+	repeated Item items = 2;
+}
+
+/** Item contains most of the inspection information such as; selected rating
+ * values, notes and photos. The name of an item should make sense in context
+ * of the section which they are a child of. An item corresponds to an
+ * individual inspection row within the inspection.
+ */
+message Item {
+
+	/** Name is an optional field but should be set to something that makes
+	 * sense in context of the parent section. For example; 'Kitchen':
+	 * 'Sink', 'Floor 1': 'Water Heater'.
+	 */
+	string name = 1;
+
+	/** Notes is an optional field where inspectors can type custom notes
+	 * (optionally using SnapText) that pertain to this item.
+	 */
+	string notes = 2;
+
+	/** Info is an optional field that can be used to provide helpful
+	 * information to the inspector. It is not shown on the report and is
+	 * primarily used to help training. */
+	string info = 3;
+
+	/** Photos data can be added with the AddInspectionPhotos api. */
+	repeated Photo photos = 8;
+
+	/** Rating group key is a string that can be used to access a rating
+	 * group from the parent inspection. A rating group must exist for this
+	 * key within the inspection for the value to be valid.
+	 */
+	string rating_group_key = 5;
+
+	/** Values are a map of rating keys and the selected value(s). That can
+	 * be referenced using the item's associated rating group.
+	 */
+	map<string, RatingValues> values = 6;
+
+	/** Scores are a map of rating keys and the selected score(s). That can
+	 * be referenced using the item's associated rating group.
+	 */
+	map<string, .happyco.type.v1.FloatArray> scores = 7;
+}
+
+message Photo {
+	.happyco.type.v1.IntegrationID id = 1;
+	string url = 2;
+}
+
+/** Header fields exist at the end of inspections and reports generated from
+ * them. They can be preset in scheduled inspections.  
+ */
+message FooterField {
+
+	/** Label is required and is shown on both the inspection and reports.
+	 * Example values include: File #, Key Number, etc.
+	 */
+	string label = 1;
+
+	/** Type is required an must be set to 'text'.
+	 */
+	string type = 2;
+
+	/** Value is optional and is shown on both the inspection and reports.
+	 * It can be changed during the inspection.
+	 */
+	string value = 3;
+}
+
+/** Rating groups have an optional label that can be useful for selecting a
+ * rating group during the item insert or update process. A rating group is
+ * what makes up the form controls for each item row in an inspection.
+ */
+message RatingGroups {
+
+	/** Label is an optional field that can help users that need to update
+	 * inspections on the fly.
+	 */
+	string label = 1;
+
+
+	/** Ratings are the ordered set of rating controls an inspector sees
+	 * for an item that references this rating group.
+	 */
+	repeated RatingControl ratings = 2;
+}
+
+/* Rating control describe a single control that a user can use to rate an item. There
+ * are currently 3 controls; a checkbox, radio group, and drop down. The 
+ */
+message RatingControl {
+
+	/** Key is a required field. It is used when a control has a selected
+	 * value. The key and its selected value(s) will be inserted into an
+	 * item's values map field and the key and the selected score(s) will
+	 * be inserted into the item's scores map field. It is also the default
+	 * string displayed to the user unless custom label(s) are set (see each control type).
+	 */
+	string key = 1;
+
+
+	/** Control type is a required field and must be one of checkbox,
+	 * radio_group, or drop_down. 
+	 */
+	oneof control_type {
+		RatingCheckbox checkbox = 2;
+		RatingRadioGroup radio_group = 3;
+		RatingDropDown drop_down = 4;
+	}
+}
+
+// TODO: add support to change colors and rating images
+/** Rating checkbox is the simplest control and can simply be toggled. When
+ * toggled on the value and score will be set on the item with the rating
+ * controls key; when off no entries will be added to the item.
+ */
+message RatingCheckbox {
+
+	/** Label is an optional field that will override key as the user to be
+	 * displayed. This is useful for localization of inspections. 
+	 */
+	string label = 1;
+
+	/** Value is a required field that will be inserted into the item and
+	 * shown on reports if the checkbox is toggled on.
+	 */
+	string value = 2;
+
+	/** Score is an optional field that will be inserted into the item and
+	 * can be shown on reports if the checkbox is toggled on.
+	 */
+	float score = 3;
+
+  string color = 4;
+
+  RatingImage image = 5;  
+}
+
+/** Rating radio group are mutually exclusive controls. They can have none or
+ * one option selected. */
+message RatingRadioGroup {
+
+	/** Label is an optional field that will override key as the user to be
+	 * displayed. This is useful for localization of inspections. 
+	 */
+	string label = 1;
+
+	/* Options is a required field that muast have 2-6 elements that
+	 * represent the possible mutually exclusive selections*/
+	repeated RatingRadioGroupOption options = 2; 
+}
+
+/** Rating radio group option represent one of the toggles in a radio group.
+ */
+message RatingRadioGroupOption {
+
+	/** Value is a required field that will be inserted into the item and
+	 * shown on reports if this radio option is selected. No two options in
+	 * the same radio group can have the same value.
+	 */
+	string value = 2;
+
+	/** Score is an optional field that will be inserted into the item and
+	 * can be shown on reports if this radio option is selected.
+	 */
+	float score = 3;
+
+  string color = 4;
+
+  RatingImage image = 5;
+}
+
+/** Rating drop downs are currently mutually exclusive controls. They can have
+ * none or one option selected. They differ from radio controls in that each
+ * option can have its own label.
+ */
+message RatingDropDown {
+
+	/** Label is an optional field that will override key as the user to be
+	 * displayed. This is useful for localization of inspections. 
+	 */
+	string label = 1;
+
+
+	/* Options is a required field that muast have 2-16 elements that
+	 * represent the possible mutually exclusive selections*/
+	repeated RatingDropDownOption options = 2;
+}
+
+/** Rating drop down options represent one of the selectable options in a drop
+ * down.
+ */
+message RatingDropDownOption {
+
+	/** Label is an optional field that will override the value as the
+	 * defaul option to be displayed to the user for this option. This is
+	 * useful for localization of inspections. 
+	 */
+	string label = 1;
+
+
+	/** Value is a required field that will be inserted into the item and
+	 * shown on reports if this radio option is selected. No two options in
+	 * the same drop down can have the same value.
+	 */
+	string value = 2;
+
+	/** Score is an optional field that will be inserted into the item and
+	 * can be shown on reports if this drop down option is selected.
+	 */
+	float score = 3;
+
+  string color = 4;
+
+  RatingImage image = 5;
+}
+
+message RatingValues {
+  oneof rating_values {
+    string scalar = 1;
+    .happyco.type.v1.StringArray array = 2;
+  }
+}
+
+/*
+enum RatingColor {
+  UNKNOWN    = 0;
+  RED        = 1;
+  ORANGE     = 2;
+  YELLOW     = 3;
+  GREEN      = 4;
+  LIGHT_BLUE = 5;
+  DARK_BLUE  = 6;
+  PURPLE     = 7;
+  PINK       = 8;
+}
+*/
+
+enum RatingImage {
+  UNDEFINED = 0;
+  STAR_FULL =1;
+  STAR_HALF =2;
+  STAR_EMPTY =3;
+  TICK_ROUND =4;
+  CLEAN =5;
+  SCRATCHES =6;
+  SPLAT =7;
+  BROKEN =8;
+  TICK =9;
+  CROSS =10;
+  A =11;
+  B =12;
+  C =13;
+  D =14;
+  E =15;
+  F =16;
+  G =17;
+  H =18;
+  I =19;
+  J =20;
+  K =21;
+  L =22;
+  M =23;
+  N =24;
+  O =25;
+  P =26;
+  Q =27;
+  R =28;
+  S =29;
+  T =30;
+  U =31;
+  V =32;
+  W =33;
+  X =34;
+  Y =35;
+  Z =36;
+  DIGIT_0 =37;
+  DIGIT_1 =38;
+  DIGIT_2 =39;
+  DIGIT_3 =40;
+  DIGIT_4 =41;
+  DIGIT_5 =42;
+  DIGIT_6 =43;
+  DIGIT_7 =44;
+  DIGIT_8 =45;
+  DIGIT_9 =46;
+  EXCLAMATION =47;
+  QUESTION =48;
+  EXCLAMATION_QUESTION =49;
+  DOUBLE_EXCLAMATION =50;
+  DOLLAR =51;
+  POUND =52;
+  CENTS =53;
+  THUMBS_UP =54;
+  THUMBS_DOWN =55;
+  AWARD =56;
+  FEMALE =57;
+  MALE =58;
+  CALENDAR =59;
+  BUILDINGS =60;
+  BUILDING =61;
+  HOUSE =62;
+  NO_ENTRY =63;
+  DOG =64;
+  CAT =65;
+  RAT =66;
+  CIGARETTE =67;
+  NO_SMOKING =68;
+  POOP =69;
+  WEED =70;
+  GUN =71;
+  BROKEN_GLASS =72;
+  CRACKED =73;
+  DEAD_FACE =74;
+  HANDICAP =75;
+  BROKEN_HEART =76;
+  HEART =77;
+  SYRINGE =78;
+  CLOCK =79;
+  MUSIC_NOTE =80;
+  PLANT =81;
+  NOSE =82;
+  DROPLET =83;
+  ELECTRIC =84;
+  BUG =85;
+  ARROW_RIGHT =86;
+  ARROW_LEFT =87;
+  ARROW_UP =88;
+  ARROW_DOWN =89;
+  RECYCLE =90;
+  TRASH =91;
+  KEY =92;
+  LOCK =93;
+  UNLOCK =94;
+  CLOUD =95;
+  SUNSHINE =96;
+  PLUS =97;
+  MINUS =98;
+  TEXTFIELD =99;
+  METER =100;
+  CAR =101;
+  CHART =102;
+  WRENCH =103;
+  CALCULATOR =104;
+  CREDIT_CARD =105;
+  PAINTBRUSH =106;
+  ROLLER =107;
+  MOBILE =108;
+  FLAG =109;
+  DOOR_OPEN =110;
+  DOOR_SHUT =111;
+  BED =112;
+  SHOWER =113;
+  SMOKE_ALARM =114;
+  LIGHT_BULB =115;
+  SMILEY_HAPPY =116;
+  SMILEY_SAD =117;
+}

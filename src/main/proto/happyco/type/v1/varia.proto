@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package happyco.type.v1;
+option go_package = "happyco/type/v1";
+
+
+
+message StringArray {
+  repeated string values = 1;
+}
+
+message FloatArray {
+  repeated float values = 1;
+}
+

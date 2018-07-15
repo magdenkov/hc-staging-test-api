@@ -1,0 +1,143 @@
+syntax = "proto3";
+package happyco.manage.asset.v1;
+
+option go_package = "happyco/manage/asset/v1";
+
+import  "happyco/type/v1/integration_id.proto";
+import  "happyco/type/v1/paging.proto";
+import "google/api/annotations.proto";
+
+service AssetService {
+	rpc ListAssets(ListAssetsRequest) returns (ListAssetsResponse) {
+    option(google.api.http) = {
+      post: "/api/v1/manage/assets/list"
+      body: "*"
+    };
+  };
+
+  rpc CreateAssets(CreateAssetsRequest) returns (CreateAssetsResponse) {
+    option(google.api.http) = {
+      post: "/api/v1/manage/assets/create"
+      body: "*"
+    };
+  };
+
+  rpc UpdateAssets(UpdateAssetsRequest) returns (UpdateAssetsResponse) {
+    option(google.api.http) = {
+      put: "/api/v1/manage/assets/update"
+      body: "*"
+    };
+  };
+
+  rpc ArchiveAssets(SetAssetsArchivedRequest) returns (SetAssetsArchivedResponse) {
+    option(google.api.http) = {
+      put: "/api/v1/manage/assets/archive"
+      body: "*"
+    };
+  };
+
+  rpc UnarchiveAssets(SetAssetsArchivedRequest) returns (SetAssetsArchivedResponse) {
+    option(google.api.http) = {
+      put: "/api/v1/manage/assets/unarchive"
+      body: "*"
+    };
+  };
+
+
+  rpc AddAssetPhoto(AddAssetPhotoRequest) returns (AddAssetPhotoResponse) {
+		option(google.api.http) = {
+			post: "/api/v1/manage/asset/photo/add"
+			body: "*"
+		};
+	};
+
+}
+
+message Asset {
+	type.v1.IntegrationID id = 1;
+  bool archived = 2;
+
+  string address_line_1 = 3;
+  string address_line_2 = 4;
+  string city = 5;
+  string state = 6;
+  string postal_code = 7;
+  string country = 8;
+
+	oneof type {
+		Unit unit = 9;
+		Property property = 10;
+	}
+
+  type.v1.IntegrationID photo_id = 11;
+}
+
+message Unit {
+	string building = 1;
+	string floor_plan = 2;
+}
+
+message Property {
+	string key_number = 1;
+}
+
+message ListAssetsRequest {
+	type.v1.IntegrationID account_id = 1;
+	type.v1.IntegrationID folder_id = 2;
+	repeated type.v1.IntegrationID asset_ids = 3;
+  bool include_archived = 4;
+	type.v1.Paging paging = 5;
+}
+
+message ListAssetsResponse {
+	repeated Asset assets = 1;
+	type.v1.PagingResponse paging = 2;
+}
+
+message CreateAssetsRequest {
+	type.v1.IntegrationID account_id = 1;
+	type.v1.IntegrationID folder_id = 2;
+  repeated Asset assets = 3;
+}
+
+message CreateAssetsResponse {
+	repeated type.v1.IntegrationID asset_ids = 1;
+}
+
+message UpdateAssetsRequest {
+	type.v1.IntegrationID account_id = 1;
+	type.v1.IntegrationID folder_id = 2;
+  repeated Asset assets = 3;
+}
+
+message UpdateAssetsResponse {
+}
+
+message SetAssetsArchivedRequest {
+	type.v1.IntegrationID account_id = 1;
+	type.v1.IntegrationID folder_id = 2;
+	repeated type.v1.IntegrationID asset_ids = 3;
+}
+
+message SetAssetsArchivedResponse {
+}
+
+
+message AddAssetPhotoRequest {
+	.happyco.type.v1.IntegrationID account_id = 1;   
+
+  .happyco.type.v1.IntegrationID folder_id = 2;
+
+  .happyco.type.v1.IntegrationID asset_id = 3;
+
+	/** File name must include a valid image extension. */
+	string file_name = 4;
+
+	/** Data should contain the image data. */
+	bytes data = 5;
+}
+
+
+message AddAssetPhotoResponse {
+  	happyco.type.v1.IntegrationID photo_id = 1;
+}

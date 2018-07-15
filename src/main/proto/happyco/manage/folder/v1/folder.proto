@@ -1,0 +1,131 @@
+syntax = "proto3";
+package happyco.manage.folder.v1;
+option go_package = "happyco/manage/folder/v1";
+
+
+import  "happyco/type/v1/integration_id.proto";
+import  "happyco/type/v1/paging.proto";
+import "google/api/annotations.proto";
+
+service FolderService {
+  rpc ListFolders(ListFoldersRequest) returns (ListFoldersResponse) {
+    option(google.api.http) = {
+      post: "/api/v1/manage/folders/list"
+      body: "*"
+    };
+  };
+  rpc CreateFolders(CreateFoldersRequest) returns (CreateFoldersResponse) {
+    option(google.api.http) = {
+      post: "/api/v1/manage/folders/create"
+      body: "*"
+    };
+  };
+  rpc UpdateFolders(UpdateFoldersRequest) returns (UpdateFoldersResponse) {
+    option(google.api.http) = {
+      put: "/api/v1/manage/folders/update"
+      body: "*"
+    };
+  };
+  rpc UpdateFolderStatuses(UpdateFolderStatusesRequest) returns (UpdateFolderStatusesResponse) {
+    option(google.api.http) = {
+      put: "/api/v1/manage/folder/statuses/update"
+      body: "*"
+    };
+  };
+}
+
+message Folder {
+  type.v1.IntegrationID id = 1;   
+  bool inactive = 4;
+
+	string name = 2;
+	Type type = 3;
+
+  enum Type {
+    MULTI_FAMILY = 0;
+    PROPERTY_MANAGEMENT = 1;
+  }
+}
+
+message ListFoldersRequest {
+	type.v1.IntegrationID account_id = 1;
+	repeated type.v1.IntegrationID folder_ids = 2;
+  bool include_inactive = 3;
+	type.v1.Paging paging = 4;
+}
+
+message ListFoldersResponse {
+  repeated Folder folders = 1;
+	type.v1.PagingResponse paging = 2;
+}
+
+message CreateFoldersRequest {
+  type.v1.IntegrationID account_id = 1;   
+  repeated Folder folders = 2;
+}
+
+message CreateFoldersResponse {
+  repeated type.v1.IntegrationID folder_ids  = 1;
+}
+
+message UpdateFoldersRequest {
+  type.v1.IntegrationID account_id = 1;   
+  repeated Folder folders = 2;
+}
+
+message UpdateFoldersResponse {
+  repeated type.v1.IntegrationID ids  = 1;
+}
+
+message UpdateFolderStatusesRequest {
+  type.v1.IntegrationID account_id = 1;   
+  repeated type.v1.IntegrationID folder_ids = 2;
+	bool inactive = 3;
+}
+
+message UpdateFolderStatusesResponse {
+}
+
+//service FolderAccessService {
+//	rpc ListFoldersAccess(ListFoldersAccessRequest) returns (ListAccessRequest);
+//  rpc SetAccess(SetAccessRequest) returns (SetAccessResponse);
+//  rpc GrantAccess(GrantAccessRequest) returns (GrantAccessResponse);
+//  rpc RevokeAccess(RevokeAccessRequest) returns (RevokeAccessResponse);
+//}
+//
+//message ListFoldersAccessRequest {
+//	type.v1.IntegrationID account_id = 1;
+//	repeated type.v1.IntegrationID folder_ids = 1;
+//  bool include_inactive_users = 3;
+//  bool include_archived_folders = 4;
+//	type.v1.Paging paging = 5;
+//}
+//
+//message ListFoldersAccessResponse {
+//  repeated FolderAccess folder_accesses = 1;
+//	type.v1.PagingResponse paging = 2;
+//}
+//
+//message GrantAccessRequest {
+//  account.v1.IntegrationID account_id = 1;   
+//	repeated FolderAccess folder_access = 2;
+//}
+//
+//message FolderAccess {
+//  account.v1.IntegrationID folder_id = 1;   
+//  repeated account.v1.IntegrationID user_ids = 1;   
+//}
+//
+//message GrantAccessResponse {
+//}
+//
+//message GetFolderRequest {
+//  string partnerCode = 1;
+//  string accountExternalID = 2;
+//  string folderID = 3;
+//}
+//
+//message GetFolderResponse {
+//  Folder folder = 1;
+//}
+//

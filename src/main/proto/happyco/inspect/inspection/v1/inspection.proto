@@ -1,0 +1,510 @@
+syntax = "proto3";
+package happyco.inspect.inspection.v1;
+
+option go_package = "happyco/inspect/inspection/v1";
+
+
+import "happyco/type/v1/integration_id.proto";
+import "happyco/type/v1/date.proto";
+import "happyco/type/v1/paging.proto";
+import "happyco/type/v1/event.proto";
+import "happyco/inspect/type/v1/inspect_type.proto";
+import "google/api/annotations.proto";
+
+/** Inspection service is used for creating, updating and archiving
+ * inspections. Unless otherwise noted all bulk methods occur inside of a
+ * transaction and in the event of an error all requested changes on that
+ * method call will be rolled back.
+ */
+service InspectionService {
+
+    /** List inspections gets a paginated and optionally filtered list of
+     * inspections from one or more folders.
+     */
+    rpc ListInspections (ListInspectionsRequest) returns (ListInspectionsResponse) {
+        option (google.api.http) = {
+			post: "/api/v1/inspect/inspections/list"
+			body: "*"
+		};
+    };
+
+    /** Create inspections can create inspections with any status (normally
+     * scheduled).
+     */
+    rpc CreateInspections (CreateInspectionsRequest) returns (CreateInspectionsResponse) {
+        option (google.api.http) = {
+			post: "/api/v1/inspect/inspections/create"
+			body: "*"
+		};
+    };
+
+    /** Update inspections can change the contents of inspections.
+     * Currently an inspection cannot have its asset_id or template_id
+     * updated.
+     */
+    rpc UpdateInspections (UpdateInspectionsRequest) returns (UpdateInspectionsResponse) {
+        option (google.api.http) = {
+			put: "/api/v1/inspect/inspections/update"
+			body: "*"
+		};
+    };
+
+    /** Archive inspections should be used to delete inspections that are no
+     * longer wanted. No method for purging archived inspections is
+     * available via the API.
+     */
+    rpc ArchiveInspections (SetInspectionsArchivedRequest) returns (SetInspectionsArchivedResponse) {
+        option (google.api.http) = {
+			put: "/api/v1/inspect/inspections/archive"
+			body: "*"
+		};
+    };
+
+    /** Unarchive inspections should be used if previously archived
+     * inspections need to be restored.
+     */
+    rpc UnarchiveInspections (SetInspectionsArchivedRequest) returns (SetInspectionsArchivedResponse) {
+        option (google.api.http) = {
+			put: "/api/v1/inspect/inspections/unarchive"
+			body: "*"
+		};
+    };
+
+    /** Adds photos to inspections. The returned photo IDs must be inserted
+     * into the inspection for them to be displayed. This inspection does
+     * not occur in a transaction and you will receive a response for each
+     * photo. */
+    rpc AddInspectionPhotos (AddInspectionPhotosRequest) returns (AddInspectionPhotosResponse) {
+        option (google.api.http) = {
+			post: "/api/v1/inspect/inspection/photos/add"
+			body: "*"
+		};
+    };
+
+    rpc CreateDelegatedInspectionLinks (CreateDelegatedInspectionLinksRequest) returns (CreateDelegatedInspectionLinksResponse) {
+        option (google.api.http) = {
+			post: "/api/v1/inspect/inspection/links/create"
+			body: "*"
+		};
+    };
+}
+
+
+message CreateDelegatedInspectionLinksRequest {
+    .happyco.type.v1.IntegrationID account_id = 1;
+    repeated CreateDelegatedInspectionLinkRequest requests = 2;
+    bool send_email = 3;
+    string email_subject_template = 4;
+    string email_template_html = 5;
+    string email_template_text = 6;
+}
+
+message CreateDelegatedInspectionLinkRequest {
+    string email = 1;
+    string first_name = 2;
+    string last_name = 3;
+    .happyco.type.v1.IntegrationID inspection_id = 4;
+    .happyco.type.v1.DateTime expiry = 5;
+}
+
+message CreateDelegatedInspectionLinksResponse {
+    repeated CreateDelegatedInspectionLinkResponse responses = 1;
+}
+
+message CreateDelegatedInspectionLinkResponse {
+    string link = 1;
+    string error = 2;
+}
+
+message AddInspectionPhotosRequest {
+
+    /** Account ID that the request applies to.
+     */
+    .happyco.type.v1.IntegrationID account_id = 1;
+
+    /** Requests to be performed. The responses will be an array of the
+     * same length and order.
+     */
+    repeated AddInspectionPhotoRequest requests = 2;
+}
+
+message AddInspectionPhotoRequest {
+
+    .happyco.type.v1.IntegrationID folder_id = 1;
+
+    .happyco.type.v1.IntegrationID inspection_id = 2;
+
+    /** File name must include a valid image extension. */
+    string file_name = 3;
+
+    /** Data should contain the image data. */
+    bytes data = 4;
+}
+
+
+message AddInspectionPhotosResponse {
+    /** Responses is an array of the same length and order as the requests.
+     */
+    repeated AddInspectionPhotoResponse responses = 1;
+}
+
+message AddInspectionPhotoResponse {
+
+    happyco.type.v1.IntegrationID photo_id = 1;
+
+    /** Error contains an error response for a request or an empty string.
+     */
+    string error = 2;
+}
+
+/** Inspection represents an inspection in its 3 states: scheduled, in_progress
+ * and completed.
+ */
+message Inspection {
+
+    /** ID of inspection. */
+    .happyco.type.v1.IntegrationID id = 1;
+
+    /** Account ID that the inspection belongs to.
+     */
+    .happyco.type.v1.IntegrationID account_id = 2;
+
+
+    .happyco.type.v1.IntegrationID folder_id = 3;
+
+    /** Asset is the parent that inspection is attached to. This field must
+     * reference a non archived asset in the same folder as the template
+     * referenced below.
+     */
+    .happyco.type.v1.IntegrationID asset_id = 4;
+
+    /** Template is the prototype of an inspection thats allow it to be
+     * configured on the fly. This field must reference a non archived
+     * template in the same folder as the parent asset referenced above.
+     */
+    .happyco.type.v1.IntegrationID template_id = 5;
+
+    /** Template outline when set on a scheduled inspection forces a
+     * different outline prototype to be used when the inspection moves
+     * from scheduled to in_progress.
+     */
+    string template_outline = 6;
+
+    /** Status can be be one of scheduled, in_progress and completed.
+     * Status message types ScheduleInspection and InspectionData include
+     * the data relevant to the status. Transitioning an inspection from
+     * in_progress or completed to scheduled will result in the loss of
+     * data and therefore raises an error.
+     */
+    oneof status {
+        ScheduledInspection scheduled = 7;
+        InspectionData in_progress = 8;
+        InspectionData completed = 9;
+    }
+
+    .happyco.type.v1.DateTime update_time = 10;
+
+}
+
+/** Scheduled inspection is the message type for inspection status scheduled. It
+ * can include a specific scheduled date for the inspection and overrides for
+ * header and footer fields when the inspection status transitions to
+ * in_progress.
+ */
+message ScheduledInspection {
+
+    /** Schedule date is an optional field that contians the expected start
+     * time or due date of the inspection.
+     */
+    .happyco.type.v1.DateTime schedule_date = 1;
+
+    /** Header notes is an optional override that will be used instead of
+     * the header fields defined by the template.
+     */
+    repeated .happyco.inspect.type.v1.HeaderField header_fields = 2;
+
+    /** Footer notes is an optional override that will be used instead of
+     * the footer fields defined by the template.
+     */
+    repeated .happyco.inspect.type.v1.FooterField footer_fields = 3;
+
+    repeated .happyco.inspect.type.v1.Section sections = 4;
+}
+
+/** Inspection data has fields containing all of the inspection data for an
+ * inspection with a status of in_progress or completed.
+ */
+message InspectionData {
+
+    /** Started at is a non optional field that is set to the actual time
+     * that an inspection transitions from scheduled to in_progress. This
+     * time comes from the device where the transition occurs on as the
+     * user may be offline.
+     */
+    .happyco.type.v1.DateTime started_at = 1;
+
+    /** Ended at is an optional field for in_progress inspections but
+     * required for completed inspections. It is set to the actual time
+     * that an inspection transtions from in_progress to complete. This
+     * time comes from the device where the transition occurs as the suer
+     * may be offline.
+     */
+    .happyco.type.v1.DateTime ended_at = 2;
+
+    /** User started at is an optional field that can appear on reports.
+     * This can be updated by the user to a specific time. When an
+     * inspection transitions from scheduled to in_progress the
+     * schedule_date becomes this field.
+     */
+    .happyco.type.v1.DateTime user_started_at = 3;
+
+    /** User ended at is an optional field that can appear on reports.
+     * This can be updated by the user to a specific time.
+     */
+    .happyco.type.v1.DateTime user_ended_at = 4;
+
+    /** HeaderFields are shown on the top of an inspection and reports
+     * generated from it.
+     */
+    repeated .happyco.inspect.type.v1.HeaderField header_fields = 7;
+
+    /** Sections and their items hold most of the inspection data; selected
+     * ratings, notes, and photos.
+     */
+    repeated .happyco.inspect.type.v1.Section sections = 6;
+
+    /** FooterFields are shown at the end of an inspection and reports
+     * generated from it.
+     */
+    repeated .happyco.inspect.type.v1.FooterField footer_fields = 8;
+
+    /** Rating groups is a map of unique keys within an inspection to
+     * rating groups. Each item within this inspection must reference a
+     * rating group with a key in this map.
+     */
+    map<string, .happyco.inspect.type.v1.RatingGroups> rating_groups = 5;
+
+}
+
+/** List inspection request is used for fetching inspections. It can be
+ * filtered to specific inspections, assets or folders. If the intent is to be
+ * notified when an inspection undergoes a status transition please use the
+ * InspectionEventService.
+ */
+message ListInspectionsRequest {
+
+    /** Account ID that the request applies to. For custom integrations
+     * (i.e. not integration partners) it can be omitted.
+     */
+    .happyco.type.v1.IntegrationID account_id = 1;
+
+    /** Folder IDs is an optional filter that lists inspections only for
+     * specific folders.
+     */
+    repeated .happyco.type.v1.IntegrationID folder_ids = 2;
+
+    /** Asset IDs is an optional filter that lists inspections only for
+     * specific assets.
+     */
+    repeated .happyco.type.v1.IntegrationID asset_ids = 3;
+
+    /** Inspection IDs  is an optional filter that lists only specific
+     * inspections. This is commonly used to get a single inspection.
+     */
+    repeated .happyco.type.v1.IntegrationID inspection_ids = 4;
+
+    /** Archived when set to true returns archived inspections only.
+     */
+    bool archived = 5;
+
+    /** Paging message that contains information about the page being
+     * requested. This message is usually copied from a previous list
+     * request's response.
+     */
+    .happyco.type.v1.Paging paging = 6;
+
+    .happyco.type.v1.DateTime min_update_time = 7;
+
+    .happyco.type.v1.DateTime max_update_time = 8;
+}
+
+/** List inspection response is a page of fetched inspection results. It
+ * includes a previous and next page token that can be passed into subsequent
+ * list inspection requests.
+ */
+message ListInspectionsResponse {
+
+    /** Inspections contains the results for this page.
+     */
+    repeated Inspection inspections = 1;
+
+    /** Previous page is an token that will be present for all pages after
+     * the first.
+     */
+    .happyco.type.v1.Paging previous_page = 2;
+
+    /** Next page is an token that will be present for all pages except the
+     * last.
+     */
+    .happyco.type.v1.Paging next_page = 3;
+}
+
+/** Create Inspection request can be used to create new valid scheduled, in
+ * progress or completed inspections. Two inspections cannot have the same
+ * external ID and all must be valid for the request to complete. This includes
+ * archived inspection IDs.
+ */
+message CreateInspectionsRequest {
+
+    /** Account ID that the request applies to. For custom integrations
+     * (i.e. not integration partners) it can be omitted.
+     */
+    .happyco.type.v1.IntegrationID account_id = 1;
+
+    /** Inspections to be created.
+     */
+    repeated Inspection inspections = 2;
+}
+
+/** Create Inspection reposne contains a list of inspection ids (including
+ * happyco internal ids) for inspections created with a create inspection
+ * request.
+ */
+message CreateInspectionsResponse {
+    repeated .happyco.type.v1.IntegrationID inspection_ids = 1;
+}
+
+/** Create Inspection request can be used to update existing valid scheduled,
+ * in progress completed, and archived inspections. Two inspections cannot have
+ * the same external ID and all must be valid for the request to complete. This
+ * includes archived inspection IDs. An update cannot cause an inspection to
+ * transition from in_progress to scheduled.
+ */
+message UpdateInspectionsRequest {
+
+    /** Account ID that the request applies to. For custom integrations
+     * (i.e. not integration partners) it can be omitted.
+     */
+    .happyco.type.v1.IntegrationID account_id = 1;
+
+    /** Inspection to be updated.
+     */
+    repeated Inspection inspections = 2;
+}
+
+/** Update inspection response contains no data and indicates success of all
+ * updates.
+ */
+message UpdateInspectionsResponse {
+}
+
+/** SetInspectionsArchivedRequest is used to archive and unarchive  multiple inspections.
+ */
+message SetInspectionsArchivedRequest {
+
+    /** Account ID that the request applies to. For custom integrations
+     * (i.e. not integration partners) it can be omitted.
+     */
+    .happyco.type.v1.IntegrationID account_id = 1;
+
+    /** Inspection IDs that should be updated. */
+    repeated .happyco.type.v1.IntegrationID inspection_ids = 3;
+}
+
+/** SetInspectionsArchivedResponse contains no data and indicates success of
+ * the operation.
+ */
+message SetInspectionsArchivedResponse {
+}
+
+/** InspectionEventService is the simplest way to be notified of inspection
+ * status changes. Any number of clients can connect to the service and be
+ * pushed the events. HappyCo guarantees to only send one client the event at a
+ * time (in a round robin fashion). This means that you can scale event
+ * processing as easily as your web servers.
+ * 
+ * For this to work events must be acknowledged or time extensions requested
+ * before the timeout peroid. If neither of these occurs, the event will be
+ * sent to a new client. This covers 99% of cases, but if it's essential that
+ * in the event of a frozen client (that unfreezes) that the event is not sent
+ * to another client. You can de-duplicate requests using the event ID.
+ *
+ * When selecting a timeout and possible requesting time extensions please be
+ * wary of network travel time. We recommend setting large timeouts (10mins+)
+ * unless there is a critical reason to be resent events faster. 
+ */
+service InspectionEventService {
+
+    /** On inspection status changes returns a stream that will be pushed
+     * events as they occur
+     */
+    rpc OnInspectionStatusChanges (InspectionStatusChangesEventRequest) returns (stream InspectionStatusChangesEvent);
+
+    /** On inspection status changes ack should be called when events have
+     * been processed. Unless this is called events will be sent again
+     * after the timeout period.
+     */
+    rpc OnInspectionStatusChangesAck (InspectionStatusChangesEventAck) returns (InspectionStatusChangesEventAckResponse);
+}
+
+message InspectionStatusChangesEventRequest {
+
+    /** Account ID that the request applies to. For custom integrations
+     * (i.e. not integration partners) it can be omitted.
+     */
+    .happyco.type.v1.IntegrationID account_id = 1;
+
+    /** Options the client can set to configure the returned event stream.
+     * See EventHandlerOptions for more details.
+     */
+    .happyco.type.v1.EventHandlerOptions options = 2;
+    //	filtering maybe later?
+    //  repeated type.v1.IntegrationID folder_ids = 2;
+    //  repeated type.v1.IntegrationID inspection_ids = 3;
+    //  string status = 4;
+}
+
+/** Inspection status change events are emitted from streams requested with
+ * OnInspectionStatusChanges.
+ */
+message InspectionStatusChangesEvent {
+    .happyco.type.v1.Event event = 1;
+    repeated InspectionStatusChange changes = 2;
+
+    message InspectionStatusChange {
+
+        /** Inspection ID can be used to fetch the inspection with a
+         * filtered list inspections request
+         */
+        .happyco.type.v1.IntegrationID inspection_id = 1;
+
+        /** From status is the status prior to the change event.
+         */
+        Status from_status = 2;
+        /** To status is the status post the change event.
+         */
+        Status to_status = 3;
+
+        enum Status {
+            SCHEDULED = 0;
+            IN_PROGRESS = 1;
+            COMPLETED = 2;
+        }
+    }
+}
+
+/** Inspection status changes event ack is used to acknowledge or request time
+ * extensions for one or more events.
+ */
+message InspectionStatusChangesEventAck {
+    /** See EventAck for more details.
+     */
+    .happyco.type.v1.EventAck ack = 1;
+}
+
+/** InspectionStatusChangeEventAckResponse contains no data but indicates
+ * successful acknowledgement.
+ */
+message InspectionStatusChangesEventAckResponse {
+}
+

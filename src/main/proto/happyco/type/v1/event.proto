@@ -1,0 +1,22 @@
+syntax = "proto3";
+package happyco.type.v1;
+
+option go_package = "happyco/type/v1";
+
+message EventHandlerOptions {
+	int32 ack_timeout_seconds = 1;
+}
+
+message Event {
+	int32 id = 1;
+}
+
+message EventAck {
+	repeated int32 event_ids = 1;
+	oneof ack_message {
+	 bool ack = 2;
+	 int32 extend_timeout_seconds = 3;
+	}
+}
+
+
